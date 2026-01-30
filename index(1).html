@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ToFL</title>
+  <style>
+    /* Scroll progress indicator */
+    #scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: var(--accent);
+      width: 0%;
+      z-index: 10000;
+      transition: width 0.2s ease-out;
+      border-radius: 2px;
+      display: none; /* hide by default */
+    }
+    body.loaded #scroll-progress {
+      display: block; /* show only after loader is gone */
+    }
+    :root{--bg:#000;--accent:#00FF41;--text:#f8fafc;--header-h:68px}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+
+    body{
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;
+      background:#000;color:var(--text);
+      display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Loader */
+    .loader{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--bg);
+      z-index:9999;
+    }
+    .tofl-word{
+      font-weight:800;
+      color:var(--accent);
+      font-size:10vw;
+      line-height:1;
+      display:inline-block;
+    }
+    .tofl-word .slogan{
+      display:block;
+      font-weight:600;
+      font-size:2.6vw;
+      margin-top:.25rem;
+      color:var(--accent);
+      text-align:center;
+    }
+    .loader.tofl-animate .tofl-word{
+      animation: toflAnim 2.2s cubic-bezier(.22,.75,.2,1) forwards;
+    }
+    @keyframes toflAnim{
+      0%{transform:scale(.2) translateY(0);opacity:0}
+      10%{opacity:1}
+      45%{transform:scale(1)}
+      85%{transform:scale(8) translateY(-18vh);opacity:1}
+      100%{transform:scale(36) translateY(-120vh);opacity:0}
+    }
+
+    main{
+      flex:1 0 auto;
+      position:relative;
+      z-index:1;
+      padding:calc(var(--header-h) + 1rem) clamp(0.5rem, 3vw, 1.2rem) 2rem;
+      width:100%;
+      max-width:100vw;
+    }
+
+    /* Header */
+    header.site-header{
+      position:fixed;
+      top:0;left:0;right:0;
+      height:var(--header-h);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 clamp(0.6rem, 4vw, 1.2rem);
+      background:rgba(0,0,0,0.88);
+      backdrop-filter:blur(12px);
+      z-index:999;
+      width:100%;
+      max-width:100vw;
+      box-sizing:border-box;
+    }
+    .logo{
+      font-weight:900;
+      color:var(--accent);
+      font-size:clamp(1.35rem,3vw,1.9rem);
+      padding:.6rem 1rem;
+      border-radius:12px;
+      text-decoration:none;
+      background:rgba(255,255,255,0.02);
+      box-shadow:0 8px 30px rgba(0,255,65,0.04);
+      transition:transform .16s ease, box-shadow .16s ease;
+      display:inline-flex;align-items:center;gap:.5rem;
+    }
+    .logo:hover{transform:translateY(-3px);box-shadow:0 18px 44px rgba(0,255,65,0.06)}
+    nav.site-nav {
+      display:flex;
+      align-items:center;
+      gap:clamp(0.5rem, 2vw, 1.2rem);
+      flex-wrap:wrap;
+    }
+    nav.site-nav a{
+      color:rgba(248,250,252,0.9);
+      text-decoration:none;
+      margin-left:0;
+      padding:.38em .7em;
+      border-radius:7px;
+      font-weight:600;
+      font-size:clamp(1rem,2.6vw,1.09rem);
+      transition:background .13s,color .13s;
+    }
+    nav.site-nav a:hover{background:rgba(0,255,65,0.08);color:var(--accent)}
+
+    /* Hero: always single-line heading; we scale the inner span via JS to make the full text visible */
+    .hero{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      min-height:calc(100vh - var(--header-h));
+      padding:clamp(1.1rem, 3vw, 1.7rem) clamp(0.5rem, 3vw, 1.5rem) clamp(2.5rem, 7vw, 4rem);
+      gap:clamp(0.7rem, 2vw, 1.2rem);
+      width:100%;
+      box-sizing:border-box;
+    }
+    .hero h2{
+      font-weight:900;
+      font-size:clamp(1.5rem,7vw,4.5rem);
+      margin:0;
+      width:100%;
+      max-width:1200px;
+      color:var(--text);
+      white-space:nowrap;
+      overflow:visible;
+    }
+    .hero h2 .heading-inner{display:inline-block;transform-origin:center left;will-change:transform}
+    .hero p{
+      max-width:760px;
+      color:rgba(248,250,252,0.78);
+      margin:0;
+      font-size:clamp(1rem,2.5vw,1.12rem);
+    }
+    .hero .cta-row{
+      display:flex;
+      gap:clamp(0.5rem, 2vw, 1rem);
+      justify-content:center;
+      flex-wrap:wrap;
+      margin-top:clamp(0.7rem,2vw,1rem);
+    }
+    .cta{background:var(--accent);color:#000;padding:.9rem 1.8rem;border-radius:12px;font-weight:800;border:none;cursor:pointer}
+    .cta.secondary{background:rgba(0,0,0,0.16);border:1.5px solid rgba(0,255,65,0.12);color:var(--accent)}
+
+    /* Features */
+    .features{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:clamp(1rem,3vw,1.6rem);
+      max-width:1200px;
+      margin:clamp(1.2rem,4vw,2rem) auto;
+      padding:0 clamp(0.5rem, 3vw, 1.2rem);
+      align-items:stretch;
+      width:100%;
+      box-sizing:border-box;
+    }
+
+    /* layout: try to show up to 4-5 cards per row depending on width */
+    .feature{
+      flex:1 1 220px;
+      min-width:220px;
+      max-width:320px;
+      display:flex;
+      align-items:stretch;
+      width:100%;
+      box-sizing:border-box;
+    }
+
+    .feature-inner{
+      width:100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      padding:clamp(0.8rem,2vw,1.1rem) clamp(0.6rem,2vw,1rem);
+      border-radius:14px;
+      display:flex;
+      gap:clamp(0.7rem,2vw,1rem);
+      align-items:center;
+      box-shadow:0 10px 30px rgba(0,0,0,0.55);
+      border:1px solid rgba(255,255,255,0.03);
+      transition:transform 0.28s cubic-bezier(.22,.7,.2,1), box-shadow 0.28s ease, border-color 0.28s ease;
+      backdrop-filter: blur(6px) saturate(1.05);
+      position:relative;overflow:hidden;will-change:transform,box-shadow;
+    }
+
+    /* glossy sheen */
+    .feature-inner::before{
+      content:'';position:absolute;left:-30%;top:-60%;width:160%;height:120%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02) 40%, transparent 60%);
+      transform: rotate(-18deg);opacity:0;transition:opacity 420ms ease, transform 420ms ease;pointer-events:none;mix-blend-mode:overlay;
+    }
+
+    .row{display:flex;align-items:center;gap:clamp(0.6rem,2vw,1rem);}
+
+    .icon{
+      flex:0 0 clamp(44px, 12vw, 64px);
+      width:clamp(44px, 12vw, 64px);
+      height:clamp(44px, 12vw, 64px);
+      border-radius:12px;
+      background: linear-gradient(135deg, rgba(0,255,65,0.18), rgba(0,255,65,0.06));
+      display:flex;align-items:center;justify-content:center;font-weight:800;
+      font-size:clamp(0.82rem, 2vw, 0.95rem);
+      color:#001;
+      box-shadow:0 6px 20px rgba(0,255,65,0.06);border:1px solid rgba(0,255,65,0.08);
+      transition:transform 360ms cubic-bezier(.22,.7,.2,1), box-shadow 360ms ease;transform-origin:center;will-change:transform;
+    }
+
+    @keyframes iconPulse{0%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(0,255,65,0))}50%{transform:scale(1.06);filter:drop-shadow(0 6px 18px rgba(0,255,65,0.12))}100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(0,255,65,0))}}
+    .icon.animate{animation:iconPulse 3.8s infinite ease-in-out}
+
+    .feature h3{
+      margin:0 0 .15rem;
+      font-size:clamp(1rem,2.5vw,1.09rem);
+      font-weight:800;
+      color:var(--text);
+    }
+    .feature p{
+      margin:0;
+      color:rgba(248,250,252,0.72);
+      font-size:clamp(.94rem,2vw,.99rem);
+      line-height:1.45;
+    }
+
+    .feature:hover .feature-inner, .feature:focus-within .feature-inner{
+      transform:translateY(-12px) scale(1.02);
+      box-shadow:0 36px 90px rgba(0,255,65,0.12), 0 12px 30px rgba(0,0,0,0.6);
+      border-color:rgba(0,255,65,0.12);
+    }
+    .feature:hover .feature-inner::before, .feature:focus-within .feature-inner::before{opacity:1;transform:translateX(12%) rotate(-18deg)}
+    .feature:hover .icon, .feature:focus-within .icon{transform:translateY(-6px) scale(1.04);box-shadow:0 18px 48px rgba(0,255,65,0.12)}
+
+    /* small screens */
+    @media (max-width:900px){
+      .icon{flex:0 0 52px;width:52px;height:52px;border-radius:10px;font-size:0.88rem}
+      .feature-inner::before{display:none}
+      .features{gap:1.1rem;}
+    }
+
+    /* Responsive tweaks for tablets and large phones */
+    @media (max-width:720px){
+      header.site-header{
+        flex-direction:column;
+        height:auto;
+        padding:0.5rem clamp(0.5rem, 3vw, 1rem);
+        gap:0.5rem;
+      }
+      .logo{
+        font-size:clamp(1.19rem,5vw,1.55rem);
+        padding:.55rem .9rem;
+      }
+      nav.site-nav{
+        width:100%;
+        justify-content:center;
+        gap:0.7rem;
+        flex-wrap:wrap;
+      }
+      nav.site-nav a, nav.site-nav button{
+        font-size:clamp(.97rem,3vw,1.05rem);
+        padding:.32em .68em;
+      }
+      .hero{
+        min-height:unset;
+        padding:clamp(0.7rem,4vw,1.1rem) 0.6rem clamp(1.7rem,7vw,2.3rem);
+        gap:0.7rem;
+      }
+      .hero h2{
+        font-size:clamp(1.1rem,8vw,2.1rem);
+        max-width:98vw;
+        padding:0 0.1em;
+      }
+      .hero p{
+        font-size:clamp(.99rem,4vw,1.09rem);
+        padding:0 0.1em;
+      }
+      .hero .cta-row{gap:0.4rem;}
+      .features{
+        gap:0.8rem;
+        padding:0 0.3rem;
+      }
+      .feature{
+        min-width:clamp(160px,45vw,220px);
+        max-width:96vw;
+      }
+      .feature-inner{
+        padding:0.7rem 0.6rem;
+        gap:0.6rem;
+      }
+      .icon{
+        flex:0 0 38px;
+        width:38px;height:38px;
+        font-size:0.81rem;
+        border-radius:8px;
+      }
+      .feature h3{font-size:clamp(.97rem,2.8vw,1.05rem);}
+      .feature p{font-size:clamp(.93rem,2vw,.97rem);}
+      section[id]{margin:2.2rem auto !important;}
+      #energy-sphere canvas{max-width:92vw;height:auto;}
+      footer.site-footer{padding:1.2rem 0.5rem;}
+    }
+
+    /* Smallest screens: single column, tighter gaps, modal and chat fit */
+    @media (max-width:520px){
+      header.site-header{
+        flex-direction:column;
+        height:auto;
+        padding:0.3rem 0.2rem;
+        gap:0.2rem;
+      }
+      .logo{font-size:clamp(1.05rem,7vw,1.19rem);padding:.45rem .7rem;}
+      nav.site-nav{gap:0.4rem;}
+      nav.site-nav a, nav.site-nav button{font-size:clamp(.93rem,4vw,1rem);padding:.28em .55em;}
+      .hero{padding:0.6rem 0.2rem 1.2rem;gap:0.55rem;}
+      .hero h2{font-size:clamp(.98rem,8vw,1.5rem);}
+      .features{
+        flex-direction:column;
+        gap:0.5rem;
+        padding:0 0.1rem;
+      }
+      .feature{min-width:0;max-width:100vw;}
+      .feature-inner{padding:0.5rem 0.3rem;gap:0.5rem;}
+      .icon{flex:0 0 28px;width:28px;height:28px;font-size:0.75rem;border-radius:6px;}
+      .feature h3{font-size:.95rem;}
+      .feature p{font-size:.91rem;}
+      section[id]{margin:1.3rem auto !important;}
+      #energy-sphere canvas{max-width:99vw;width:100vw;height:auto;}
+      footer.site-footer{padding:0.8rem 0.2rem;}
+      .footer-socials{gap:0.5rem;}
+      .footer-socials a{width:30px;height:30px;}
+      /* Modal tweaks */
+      .signup-modal-content{padding:0.7rem 0.2rem 0.7rem;min-width:0;max-width:99vw;}
+      /* Chat widget */
+      #tofl-chat-panel{
+        width:98vw;
+        min-width:0;
+        max-width:99vw;
+        height:clamp(320px,65vh,420px);
+        padding:0;
+        border-radius:9px;
+      }
+      #tofl-chat-toggle{width:44px;height:44px;}
+    }
+
+    /* gentle float when visible */
+    @keyframes floatUp{0%{transform:translateY(4px)}50%{transform:translateY(0)}100%{transform:translateY(4px)}}
+    .feature.visible .feature-inner{animation:floatUp 6s ease-in-out infinite both}
+
+    /* Footer */
+    footer.site-footer{margin-top:auto;padding:2rem 1rem;text-align:center;color:rgba(248,250,252,0.75);background:transparent}
+    .footer-socials{display:flex;justify-content:center;gap:1rem;margin-bottom:1rem}
+    .footer-socials a{width:38px;height:38px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(0,255,65,0.08);color:var(--accent)}
+
+    /* Remove old Responsive tweaks: now handled above */
+
+    /* Accessibility: reduce motion */
+    @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <div id="scroll-progress"></div>
+  <div class="loader" id="loader">
+    <div class="tofl-word" id="tofl">ToFL<span class="slogan">To Express</span></div>
+  </div>
+
+  <main>
+    <header class="site-header" role="banner">
+      <a class="logo" href="#home">ToFL</a>
+      <nav class="site-nav" role="navigation" aria-label="Main">
+        <a href="#home">Home</a>
+        <a href="#features">Features</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+        <button id="signup-btn" type="button" style="margin-left:1rem;background:var(--accent);color:#000;padding:.38em .9em;border-radius:7px;font-weight:700;border:none;cursor:pointer;">Sign Up</button>
+      </nav>
+    </header>
+</main>
+
+<!-- Sign Up Modal -->
+<div id="signup-modal" style="display:none;">
+  <div class="signup-modal-overlay"></div>
+  <div class="signup-modal-content" role="dialog" aria-modal="true" aria-labelledby="signup-modal-title">
+    <button class="signup-modal-close" aria-label="Close">&times;</button>
+    <h2 id="signup-modal-title" style="margin-top:0;color:var(--accent);font-weight:900;">Sign Up</h2>
+    <form id="signup-form" action="https://formspree.io/f/mzzawwbd" method="POST" style="display:flex;flex-direction:column;gap:1.2rem;">
+      <label style="text-align:left;font-weight:600;">
+        Email
+        <input type="email" name="email" required autocomplete="email"
+          style="margin-top:.4em;width:100%;padding:.7em 1em;border-radius:8px;border:1.2px solid rgba(0,255,65,0.18);background:rgba(0,0,0,0.94);color:var(--text);font-size:1em;"
+          placeholder="your@email.com">
+      </label>
+      <div style="display:flex;justify-content:center;">
+        <div class="g-recaptcha" data-sitekey="your-public-sitekey"></div>
+      </div>
+      <button type="submit" class="cta" style="margin-top:.5em;">Submit</button>
+    </form>
+    <div id="signup-form-success" style="display:none;color:var(--accent);font-weight:700;text-align:center;margin-top:1em;">Thank you for signing up!</div>
+  </div>
+</div>
+
+<style>
+  #signup-modal {
+    position: fixed;
+    z-index: 11000;
+    left: 0; top: 0; right: 0; bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+  }
+  #signup-modal.signup-modal-open {
+    display: flex;
+  }
+  .signup-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.80);
+    backdrop-filter: blur(2px);
+    z-index: 0;
+  }
+  .signup-modal-content {
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(180deg, rgba(0,0,0,0.98) 90%, rgba(0,255,65,0.02) 100%);
+    border: 1.5px solid rgba(0,255,65,0.14);
+    border-radius: 16px;
+    box-shadow: 0 16px 64px rgba(0,255,65,0.10), 0 2px 24px rgba(0,0,0,0.45);
+    padding: 2.2rem 2.4rem 2rem;
+    min-width: 320px;
+    max-width: 96vw;
+    width: 100%;
+    max-width: 420px;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    animation: signupModalIn 0.26s cubic-bezier(.22,.7,.2,1);
+  }
+  @keyframes signupModalIn {
+    0% { opacity: 0; transform: translateY(32px) scale(0.94);}
+    100% { opacity: 1; transform: translateY(0) scale(1);}
+  }
+  .signup-modal-close {
+    position: absolute;
+    right: 1.1rem;
+    top: 1.1rem;
+    background: none;
+    border: none;
+    font-size: 2.1rem;
+    color: var(--accent);
+    cursor: pointer;
+    line-height: 1;
+    z-index: 2;
+    padding: 0;
+    transition: color .18s;
+  }
+  .signup-modal-close:hover { color: #fff; background: none;}
+  #signup-form input[type="email"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(0,255,65,0.10);
+    background: rgba(0,255,65,0.01);
+  }
+  #signup-form .cta {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-weight: 800;
+    padding: .85em 0;
+    font-size: 1.09em;
+    cursor: pointer;
+    transition: background .14s;
+  }
+  #signup-form .cta:hover { background: #00e63c; }
+  @media (max-width:520px) {
+    .signup-modal-content { padding: 1.1rem 0.7rem 1.1rem; min-width: 0; }
+  }
+</style>
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<script>
+  // Modal logic
+  document.addEventListener('DOMContentLoaded', function () {
+    var signupBtn = document.getElementById('signup-btn');
+    var modal = document.getElementById('signup-modal');
+    var closeBtn = modal ? modal.querySelector('.signup-modal-close') : null;
+    var overlay = modal ? modal.querySelector('.signup-modal-overlay') : null;
+    var form = document.getElementById('signup-form');
+    var successMsg = document.getElementById('signup-form-success');
+    // Open modal
+    if(signupBtn && modal){
+      signupBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        modal.classList.add('signup-modal-open');
+        modal.style.display = 'flex';
+        // Focus first input
+        setTimeout(function(){
+          var input = modal.querySelector('input[type="email"]');
+          if(input) input.focus();
+        }, 120);
+      });
+    }
+    // Close modal
+    function closeModal() {
+      modal.classList.remove('signup-modal-open');
+      setTimeout(function(){ modal.style.display = 'none'; }, 160);
+    }
+    if(closeBtn){
+      closeBtn.addEventListener('click', function(e){
+        e.preventDefault(); closeModal();
+      });
+    }
+    if(overlay){
+      overlay.addEventListener('click', function(){ closeModal(); });
+    }
+    // Escape key closes modal
+    document.addEventListener('keydown', function(e){
+      if(modal.classList.contains('signup-modal-open') && (e.key === "Escape" || e.keyCode === 27)){
+        closeModal();
+      }
+    });
+    // Trap focus inside modal when open
+    document.addEventListener('focus', function(e){
+      if(!modal.classList.contains('signup-modal-open')) return;
+      if(!modal.contains(e.target)){
+        var input = modal.querySelector('input[type="email"]');
+        if(input) input.focus();
+      }
+    }, true);
+    // Formspree AJAX submit (prevent page reload)
+    if(form && successMsg){
+      form.addEventListener('submit', function(e){
+        if(typeof grecaptcha !== "undefined"){
+          var response = grecaptcha.getResponse();
+          if(!response){
+            e.preventDefault();
+            alert("Please complete the reCAPTCHA.");
+            return false;
+          }
+        }
+        e.preventDefault();
+        var data = new FormData(form);
+        fetch(form.action, {
+          method: "POST",
+          body: data,
+          headers: { 'Accept': 'application/json' }
+        }).then(function(response){
+          if(response.ok){
+            form.style.display = "none";
+            successMsg.style.display = "block";
+          }else{
+            response.json().then(function(data){
+              alert(data.error || "There was an error. Please try again.");
+            });
+          }
+        }).catch(function(){
+          alert("There was an error. Please try again.");
+        });
+      });
+    }
+  });
+</script>
+
+    <section class="hero" id="home">
+      <h2><span class="heading-inner">Fast, reliable, and simple — meet ToFL</span></h2>
+      <p>To Express: a modern solution for content delivery and services. Check out the features below or get started now.</p>
+      <div class="cta-row">
+        <button class="cta" onclick="location.href='#features'">Get Started</button>
+        <button class="cta secondary" onclick="location.href='#about'">Learn More</button>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="feature" tabindex="0" role="article">
+        <div class="feature-inner"><div class="icon">AI</div><div><h3>AI Insights</h3><p>Leverage AI-driven analytics and recommendations to optimize delivery.</p></div></div>
+      </div>
+      <div class="feature" tabindex="0" role="article">
+        <div class="feature-inner"><div class="icon">FD</div><div><h3>Fast Delivery</h3><p>Low latency and an optimized pipeline for fast delivery.</p></div></div>
+      </div>
+      <div class="feature" tabindex="0" role="article">
+        <div class="feature-inner"><div class="icon">S</div><div><h3>Secure</h3><p>Up-to-date security standards and encryption to keep your data safe.</p></div></div>
+      </div>
+      <div class="feature" tabindex="0" role="article">
+        <div class="feature-inner"><div class="icon">EI</div><div><h3>Easy Integration</h3><p>Simple APIs and comprehensive documentation.</p></div></div>
+      </div>
+      <div class="feature" tabindex="0" role="article">
+        <div class="feature-inner"><div class="icon">Sc</div><div><h3>Scalable</h3><p>Flexible infrastructure options from small projects to enterprise.</p></div></div>
+      </div>
+    </section>
+
+    <section id="about" style="max-width:1100px;margin:4rem auto;padding:1rem;text-align:center">
+      <h3>About ToFL</h3>
+      <p style="color:rgba(248,250,252,0.75)">
+        ToFL is a forward-thinking initiative founded by Cinar Savas under SavasCorp, focusing on transportation and energy solutions. Its mission is to innovate sustainable technologies and optimize modern mobility.
+      </p>
+    </section>
+
+    <section id="company-value" style="width:100vw; margin:4rem 0; padding:0; text-align:center;">
+      <h3 style="color:var(--accent)">SavasCorp Company Value</h3>
+      <div id="company-value-chart" style="height:400px; width:100vw; margin:0; padding:0;"></div>
+      <p style="color:rgba(248,250,252,0.57);margin-top:0.8rem;">Live coin-style chart powered by TradingView.</p>
+    </section>
+
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script type="text/javascript">
+      new TradingView.widget({
+        "width": "100%",
+        "height": 400,
+        "symbol": "SAVASCORP:SASC",
+        "interval": "60",
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1", // candlestick
+        "locale": "en",
+        "toolbar_bg": "#000000",
+        "enable_publishing": false,
+        "allow_symbol_change": true,
+        "hideideas": true,
+        "container_id": "company-value-chart"
+      });
+    </script>
+
+    <section id="energy-sphere" style="max-width:1100px;margin:4rem auto;padding:1rem;text-align:center">
+      <h3>Interactive Energy Visualization</h3>
+      <div style="display:flex;justify-content:center;margin:2rem 0"><canvas id="energySphereCanvas" width="400" height="400"></canvas></div>
+      <p style="color:rgba(248,250,252,0.57)">The 3D sphere above is an example visualization.</p>
+    </section>
+
+    <section id="contact" style="max-width:1100px;margin:4rem auto;padding:1rem;text-align:center">
+      <h3>Contact</h3>
+      <p style="color:rgba(248,250,252,0.75)">Get in touch: <a href="mailto:callisavas01@gmail.com" style="color:var(--accent)">callisavas01@gmail.com</a></p>
+    </section>
+
+
+  <footer class="site-footer">
+    <div class="footer-socials" aria-label="Social Media Links">
+      <a href="https://twitter.com/" target="_blank" rel="noopener" aria-label="X (Twitter)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.89 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 1 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4z" fill="currentColor"/></svg>
+      </a>
+      <a href="https://github.com/" target="_blank" rel="noopener" aria-label="GitHub"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.5 2.87 8.32 6.84 9.67.5.09.68-.22.68-.48 0-.24-.01-.87-.01-1.7-2.78.62-3.37-1.36-3.37-1.36-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1.01.07 1.54 1.06 1.54 1.06.89 1.57 2.34 1.12 2.91.86.09-.66.35-1.12.64-1.38-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.38-2.03 1.01-2.75-.1-.26-.44-1.3.1-2.71 0 0 .83-.27 2.73 1.02a9.2 9.2 0 0 1 2.49-.34c.85 0 1.7.11 2.49.34 1.9-1.29 2.73-1.02 2.73-1.02.54 1.41.2 2.45.1 2.71.63.72 1.01 1.63 1.01 2.75 0 3.93-2.34 4.8-4.57 5.06.36.32.68.95.68 1.92 0 1.39-.01 2.51-.01 2.85 0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12.26C22 6.58 17.52 2 12 2z" fill="currentColor"/></svg></a>
+      <a href="https://linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M19 3A2 2 0 0 1 21 5v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-8.75 15V10.75H7V18h3.25zm-1.62-8.17a1.88 1.88 0 1 1 0-3.76 1.88 1.88 0 0 1 0 3.76zm10.12 8.17v-4.11c0-2.2-1.18-3.23-2.76-3.23-1.28 0-1.85.7-2.16 1.2V10.75H12V18h3.25v-3.62c0-.96.18-1.89 1.37-1.89 1.18 0 1.2 1.1 1.2 1.94V18H19z" fill="currentColor"/></svg></a>
+    </div>
+    <div>© <span id="year"></span> ToFL — To Express. All rights reserved.<br/>Founded by Cinar Savas under SavasCorp.</div>
+  </footer>
+
+  <!-- Chat widget (hosted serverless backend required) -->
+  <div id="tofl-chat" aria-hidden="true">
+    <button id="tofl-chat-toggle" aria-label="Open chat" title="Open ToFL Assistant" aria-expanded="false" data-breathe="true">
+      <!-- three black lines icon -->
+      <svg class="lines-icon" viewBox="0 0 18 14" width="26" height="20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+        <rect x="0" y="0" width="18" height="2" rx="1" fill="#000" />
+        <rect x="0" y="6" width="18" height="2" rx="1" fill="#000" />
+        <rect x="0" y="12" width="18" height="2" rx="1" fill="#000" />
+      </svg>
+    </button>
+    <div id="tofl-chat-panel" role="dialog" aria-label="ToFL Assistant">
+      <header><strong>ToFL Assistant</strong></header>
+      <div id="tofl-chat-messages" aria-live="polite"></div>
+      <form id="tofl-chat-form">
+        <input id="tofl-chat-input" placeholder="Ask me about ToFL, features, or how to deploy the chat..." autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <style>
+      /* Chat widget styles: force bottom-right fixed position and place panel above the toggle */
+      #tofl-chat{
+        position:fixed !important;
+        right:18px !important;
+        bottom:18px !important;
+        left:auto !important;
+        top:auto !important;
+        z-index:100000 !important;
+        font-family:inherit;
+        display:flex;
+        flex-direction:column-reverse; /* toggle at the bottom */
+        align-items:flex-end;
+        gap:12px;
+        pointer-events:auto;
+      }
+     
+      /* toggle: dark circular button -- ensure the entire button is clickable */
+      #tofl-chat-toggle {
+        width:56px;
+        height:56px;
+        border-radius:50%;
+        border:1.6px solid rgba(0,255,65,0.14);
+        background:var(--accent);
+        color:#000;
+        font-size:20px;
+        cursor:pointer;
+        box-shadow:0 10px 30px rgba(0,255,65,0.12);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:0; /* remove inner padding that may offset click */
+        position:relative;
+        pointer-events:auto; /* ensure full button responds */
+        transform:none;
+      }
+
+      /* Panel: keep animations GPU-friendly (transform + opacity) and avoid heavy paints during the animation */
+      #tofl-chat-panel{width:360px;max-width:calc(100vw - 48px);height:480px;background:rgba(10,10,10,0.96);color:var(--text);border-radius:12px;padding:0;display:flex;flex-direction:column;overflow:hidden;margin-bottom:12px;box-shadow:0 30px 80px rgba(0,0,0,0.6);backdrop-filter:blur(8px);will-change:transform,opacity;transform-origin:bottom right;padding:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;perspective:800px}
+      #tofl-chat-panel header{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.03);font-weight:700}
+
+      #tofl-chat-messages{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+      .tofl-msg{max-width:86%;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.03);color:var(--text);animation:msgPop 0.35s cubic-bezier(.22,.7,.2,1) both;}
+      .tofl-msg.user{align-self:flex-end;background:linear-gradient(90deg, var(--accent), rgba(0,255,65,0.6));color:#000;animation-name:msgPopUser;}
+      .tofl-msg.assistant{align-self:flex-start;background:rgba(255,255,255,0.02);color:var(--text)}
+      /* Message pop-in animations */
+      @keyframes msgPop {
+        0% { opacity:0; transform:translateY(10px) scale(0.96);}
+        100% { opacity:1; transform:translateY(0) scale(1);}
+      }
+      @keyframes msgPopUser {
+        0% { opacity:0; transform:translateX(20px) scale(0.96);}
+        100% { opacity:1; transform:translateX(0) scale(1);}
+      }
+
+      /* Special pop for the very first assistant message */
+      .msg-pop {
+        animation: msgPop 0.5s cubic-bezier(.22,.7,.2,1) both;
+        box-shadow: 0 2px 18px 0 rgba(0,255,65,0.13);
+      }
+
+      /* Breathing/pulsing glow on toggle when idle */
+      @keyframes toggleBreath {
+        0% { box-shadow:0 0 0 rgba(0,255,65,0);}
+        50% { box-shadow:0 0 18px rgba(0,255,65,0.24);}
+        100% { box-shadow:0 0 0 rgba(0,255,65,0);}
+      }
+      #tofl-chat-toggle[data-breathe="true"] {
+        animation: toggleBreath 4s ease-in-out infinite;
+      }
+      #tofl-chat-form{display:flex;padding:10px;border-top:1px solid rgba(255,255,255,0.03);gap:8px}
+      #tofl-chat-input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
+      /* Focus styles: use green accent instead of default white/blue outline */
+      #tofl-chat-input:focus{
+        outline:none;
+        border-color:var(--accent);
+        box-shadow:0 0 0 4px rgba(0,255,65,0.10);
+        background:rgba(0,255,65,0.01);
+      }
+      #tofl-chat-input::placeholder{color:rgba(248,250,252,0.45)}
+      #tofl-chat-form button{background:var(--accent);border:none;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+      #tofl-chat-form button:focus{outline:none;box-shadow:0 0 0 4px rgba(0,255,65,0.10)}
+      /* also ensure keyboard users see a clear focus state on the send button */
+      #tofl-chat-form button:focus-visible{outline:2px solid rgba(0,255,65,0.18);outline-offset:2px}
+
+      /* Animate panel open/close using opacity + transform (avoid display:none so transitions run).
+         Use translate3d to trigger GPU compositing and keep animations smooth. Reduce expensive paints
+         like backdrop-filter and heavy box-shadow while an animation is running via the .animating class. */
+      @keyframes toflPopIn {
+        0% { opacity:0; transform:translateY(14px) scale(0.96); }
+        100% { opacity:1; transform:translateY(0) scale(1); }
+      }
+      @keyframes toflPopOut {
+        0% { opacity:1; transform:translateY(0) scale(1); }
+        100% { opacity:0; transform:translateY(16px) scale(0.92); }
+      }
+
+      /* gentle pulse for the toggle when opening */
+      @keyframes togglePulse{0%{opacity:0.22;transform:scale(0.9)}50%{opacity:0.06;transform:scale(1.3)}100%{opacity:0;transform:scale(1.6)}}
+
+      /* starting (hidden) state uses small translate + scale so only compositing changes are needed, and disables expensive effects */
+      #tofl-chat-panel {
+        transform:translate3d(0,0,0) scale(0.985);
+        opacity:0;
+        visibility:hidden;
+        pointer-events:none;
+        backface-visibility:hidden;
+        will-change:transform,opacity;
+        transition:none;
+        box-shadow:none;
+        backdrop-filter:none;
+      }
+
+      /* apply pop-in when root is open */
+      #tofl-chat[aria-hidden="false"] #tofl-chat-panel{
+        visibility:visible;
+        pointer-events:auto;
+        animation:toflPopIn 0.28s cubic-bezier(.22,.7,.2,1) both;
+      }
+
+      /* closing animation triggered via .closing class; keep visible until animationend */
+      #tofl-chat-panel.closing{
+        animation:toflPopOut 0.28s cubic-bezier(.22,.7,.2,1) both;
+        pointer-events:none;
+      }
+
+      /* while animating reduce costly effects to keep the animation buttery smooth */
+      #tofl-chat.animating #tofl-chat-panel {
+        backdrop-filter:none!important;
+        box-shadow:none!important;
+      }
+
+      #tofl-chat-toggle{position:relative}
+      #tofl-chat-toggle::after{content:'';position:absolute;inset:0;border-radius:999px;pointer-events:none;opacity:0;transform:scale(0.9);background:radial-gradient(circle at 50% 50%, rgba(0,255,65,0.14), rgba(0,255,65,0.04), transparent 50%)}
+      #tofl-chat[aria-hidden="false"] #tofl-chat-toggle::after{animation:togglePulse .9s ease-out forwards}
+
+      @media (prefers-reduced-motion:reduce){
+        #tofl-chat-panel{transition:none!important;animation:none!important}
+        #tofl-chat-toggle::after{animation:none!important}
+        .tofl-msg{animation:none!important}
+        #tofl-chat-toggle{animation:none!important}
+      }
+     </style>
+
+   <script>
+    // Consolidated chat + toggle script (single source of truth)
+    document.addEventListener('DOMContentLoaded', () => {
+      const root = document.getElementById('tofl-chat');
+      const toggle = document.getElementById('tofl-chat-toggle');
+      const panel = document.getElementById('tofl-chat-panel');
+      const form = document.getElementById('tofl-chat-form');
+      const input = document.getElementById('tofl-chat-input');
+      const msgs = document.getElementById('tofl-chat-messages');
+
+      if(!root || !toggle || !panel || !form || !msgs){
+        console.warn('ToFL chat: missing elements', {root, toggle, panel, form, msgs});
+        return;
+      }
+
+      // helper to ensure animationend triggers or fallback
+      function onAnimationEndOnce(el, cb, fallback = 600){
+        let called = false;
+        if(!el){ setTimeout(() => { if(!called){ called = true; cb(); } }, fallback); return; }
+        const handler = (ev) => { if(called) return; called = true; el.removeEventListener('animationend', handler); cb(ev); };
+        el.addEventListener('animationend', handler);
+        setTimeout(() => { if(called) return; called = true; el.removeEventListener('animationend', handler); cb(); }, fallback + 80);
+      }
+
+      // Message appending with animation
+      function appendMsg(text, cls) {
+        const el = document.createElement('div');
+        el.className = 'tofl-msg ' + (cls||'assistant');
+        el.innerText = text;
+        // Always animate in
+        // If it's the very first assistant message, add a special pop
+        if (msgs.childElementCount === 0 && (!cls || cls === 'assistant')) {
+          el.classList.add('msg-pop');
+        }
+        msgs.appendChild(el);
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+
+      // Assistant reply: enhance with professional typing illusion and better error handling
+      async function sendMessage(text){
+        appendMsg(text,'user');
+        // Show a placeholder assistant "Thinking..." message with animation
+        appendMsg('Thinking...', 'assistant');
+        const last = msgs.querySelector('.tofl-msg.assistant:last-child');
+        try{
+          const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: text }) });
+          if(!res.ok) throw new Error('Network error ' + res.status);
+          const data = await res.json();
+          const reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || data.error?.message || JSON.stringify(data);
+          // Animate the assistant reply in a professional way (typewriter effect)
+          if(last){
+            last.innerText = '';
+            let i = 0;
+            const str = reply;
+            // Respect accessibility: skip animation if reduced motion
+            const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if(reduced){
+              last.innerText = str;
+            } else {
+              function typeNext(){
+                if(i < str.length){
+                  last.innerText += str.charAt(i);
+                  i++;
+                  setTimeout(typeNext, str.charAt(i-1)==="\n"? 20 : 14 + Math.random()*16);
+                }
+              }
+              typeNext();
+            }
+          }
+        }catch(err){
+          if(last) last.innerText = 'Error: ' + (err.message||'Unknown');
+          console.error('ToFL chat send error', err);
+        }
+      }
+
+      form.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const v = input.value.trim();
+        if(!v) return;
+        input.value='';
+        sendMessage(v);
+      });
+
+      // initial welcome message
+      appendMsg('Hi — I am ToFL Assistant. Ask about features, deployment tips, or contact info.', 'assistant');
+      // Add entrance animation to the first assistant message
+      setTimeout(()=>{
+        const first = msgs.querySelector('.tofl-msg.assistant');
+        if(first) first.classList.add('msg-pop');
+      }, 20);
+
+      // Toggle behavior (single handler on the toggle button)
+      function openChat(){
+        root.classList.add('animating');
+        root.setAttribute('aria-hidden','false');
+        toggle.setAttribute('aria-expanded','true');
+        toggle.setAttribute('data-breathe','false');
+        // force style application before waiting for animationend
+        void panel.offsetWidth;
+        onAnimationEndOnce(panel, ()=>{
+          requestAnimationFrame(()=>{
+            root.classList.remove('animating');
+            panel.classList.remove('closing');
+            input.focus();
+          });
+        }, 520);
+      }
+
+      function closeChat(){
+        root.classList.add('animating');
+        panel.classList.add('closing');
+        toggle.setAttribute('aria-expanded','false');
+        toggle.setAttribute('data-breathe','true');
+        // smoother close animation
+        onAnimationEndOnce(panel, ()=>{
+          panel.classList.remove('closing');
+          root.classList.remove('animating');
+          root.setAttribute('aria-hidden','true');
+          toggle.focus();
+        }, 280); // balanced fallback for smoother close
+      }
+
+      toggle.addEventListener('click', (e)=>{
+        e.preventDefault();
+        try{
+          const isOpen = root.getAttribute('aria-hidden') === 'false';
+          if(isOpen) closeChat(); else openChat();
+        }catch(err){ console.error('ToFL toggle handler error', err); }
+      });
+
+      // Close chat when clicking anywhere outside both the panel and the entire toggle (including all children)
+      document.addEventListener('click', (e)=>{
+        const root = document.getElementById('tofl-chat');
+        const panel = document.getElementById('tofl-chat-panel');
+        const toggle = document.getElementById('tofl-chat-toggle');
+        if(!root || !panel || !toggle) return;
+
+        // Close only if click is outside both panel and toggle (including all children)
+        if(
+          root.getAttribute('aria-hidden') === 'false' &&
+          !panel.contains(e.target) &&
+          !toggle.contains(e.target)
+        ){
+          panel.classList.add('closing');
+          root.setAttribute('aria-hidden','true');
+          toggle.setAttribute('aria-expanded','false');
+          toggle.setAttribute('data-breathe','true');
+          setTimeout(()=>panel.classList.remove('closing'), 280);
+        }
+      });
+
+      // debug helper: log state on right-click (Dev only)
+      toggle.addEventListener('contextmenu', (e)=>{ console.log('ToFL state', {ariaHidden: root.getAttribute('aria-hidden'), hasClosing: panel.classList.contains('closing')}); });
+
+      // Respect reduced motion preference (ensure focus still works)
+      if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){ root.classList.remove('animating'); }
+    });
+  </script>
+  <!-- three.js demo (module build to avoid deprecated UMD bundle) -->
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+    (function(){
+      const canvas = document.getElementById('energySphereCanvas');
+      if(!canvas) return;
+      const width = canvas.clientWidth || 400;
+      const height = canvas.clientHeight || 400;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
+
+      const camera = new THREE.PerspectiveCamera(60, width/height, 0.1, 1000);
+      camera.position.z = 12;
+
+      const renderer = new THREE.WebGLRenderer({canvas: canvas, alpha:true, antialias:true});
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio || 1);
+
+      // Sphere
+      const sphereGeometry = new THREE.SphereGeometry(2, 64, 64);
+      const sphereMaterial = new THREE.MeshPhysicalMaterial({
+        color:0x00ff41, emissive:0x00ff41, emissiveIntensity:1,
+        metalness:0.25, roughness:0.08, clearcoat:0.5, clearcoatRoughness:0.2,
+        transparent:true, opacity:0.9
+      });
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      scene.add(sphere);
+
+      // Lights
+      const key = new THREE.PointLight(0x00ff41, 1.8, 100); key.position.set(8,8,10); scene.add(key);
+      const rim = new THREE.PointLight(0x00ff41, 1.0, 100); rim.position.set(-8,-5,6); scene.add(rim);
+      const ambient = new THREE.AmbientLight(0x00ff41, 0.25); scene.add(ambient);
+
+      // Particles
+      const particleCount = 800;
+      const positions = new Float32Array(particleCount * 3);
+      const angles = new Float32Array(particleCount);
+      const speeds = new Float32Array(particleCount);
+      for(let i=0;i<particleCount;i++){
+        const r = Math.random() * 0.6 + 0.2;
+        const a = Math.random() * Math.PI * 2;
+        positions[i*3] = r * Math.cos(a);
+        positions[i*3+1] = r * Math.sin(a);
+        positions[i*3+2] = (Math.random()-0.5) * 0.4;
+        angles[i] = a;
+        speeds[i] = 0.002 + Math.random()*0.006;
+      }
+      const pg = new THREE.BufferGeometry();
+      pg.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const pm = new THREE.PointsMaterial({color:0x00ff41, size:0.045, transparent:true, opacity:0.85});
+      const particles = new THREE.Points(pg, pm);
+      scene.add(particles);
+
+      // Interaction & scroll influence
+      let baseSpeed = 0.004;
+      window.addEventListener('scroll', () => {
+        const sy = window.scrollY || window.pageYOffset;
+        baseSpeed = 0.003 + sy * 0.00018;
+        pm.opacity = Math.min(1, 0.85 + sy * 0.0004);
+      }, {passive:true});
+
+      // Animate loop
+      let camAngle = 0;
+      function animate(){
+        requestAnimationFrame(animate);
+        sphere.rotation.y += baseSpeed * 0.6;
+        sphere.rotation.x += baseSpeed * 0.18;
+
+        const pos = pg.attributes.position.array;
+        for(let i=0;i<particleCount;i++){
+          angles[i] += 0.008 + Math.random()*0.002;
+          const r = Math.sqrt(pos[i*3]*pos[i*3] + pos[i*3+1]*pos[i*3+1]) + speeds[i]*0.4;
+          pos[i*3] = r * Math.cos(angles[i]);
+          pos[i*3+1] = r * Math.sin(angles[i]);
+          pos[i*3+2] += (Math.random()-0.5) * 0.02;
+          if(Math.abs(pos[i*3+2]) > 3) pos[i*3+2] *= -1;
+          if(r > 6){ pos[i*3] *= 0.12; pos[i*3+1] *= 0.12; }
+        }
+        pg.attributes.position.needsUpdate = true;
+
+        camAngle += 0.0016;
+        camera.position.x = Math.sin(camAngle) * 12;
+        camera.position.z = Math.cos(camAngle) * 12;
+        camera.lookAt(0,0,0);
+
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // Canvas hover effect
+      canvas.addEventListener('mouseenter', ()=>{ sphereMaterial.emissiveIntensity = 1.6; });
+      canvas.addEventListener('mouseleave', ()=>{ sphereMaterial.emissiveIntensity = 1.0; });
+
+      // Resize handling
+      window.addEventListener('resize', ()=>{
+        const w = canvas.clientWidth || 400;
+        const h = canvas.clientHeight || 400;
+        renderer.setSize(w,h);
+        camera.aspect = w/h; camera.updateProjectionMatrix();
+      });
+    })();
+  </script>
+
+  <script>
+    // basic loader + animate -> remove loader, reveal content
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const loader = document.getElementById('loader');
+      const word = document.getElementById('tofl');
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(reduced){
+        document.body.classList.add('loaded');
+        if(loader) loader.remove();
+        initFeatureScroll(); initSectionScroll(); fitHeroHeading(); return;
+      }
+      requestAnimationFrame(()=>setTimeout(()=>loader?.classList.add('tofl-animate'),80));
+      word?.addEventListener('animationend', ()=>{
+        document.body.classList.add('loaded');
+        if(loader) loader.remove();
+        initFeatureScroll(); initSectionScroll(); fitHeroHeading(); initStickyHeader();
+      }, {once:true});
+      setTimeout(()=>{ if(document.body.classList.contains('loaded')) fitHeroHeading(); }, 1200);
+    });
+  </script>
+
+  <script>
+    // Lightweight helpers used by DOMContentLoaded to avoid ReferenceError
+    (function(){
+      // reveal feature cards when they enter viewport
+      window.initFeatureScroll = function(){
+        try{
+          const items = document.querySelectorAll('.feature');
+          if(!items || items.length === 0) return;
+          if(!('IntersectionObserver' in window)){
+            items.forEach(i=>i.classList.add('visible'));
+            return;
+          }
+          const obs = new IntersectionObserver((entries, o)=>{
+            entries.forEach(en=>{
+              if(en.isIntersecting){ en.target.classList.add('visible'); o.unobserve(en.target); }
+            });
+          }, {threshold:0.12});
+          items.forEach(i=>obs.observe(i));
+        }catch(e){ console.warn('initFeatureScroll error', e); }
+      };
+
+      // placeholder for potential section-specific scroll handlers
+      window.initSectionScroll = function(){ /* noop for now */ };
+
+      // scale the hero heading to keep it on one line (simple, tolerant implementation)
+      window.fitHeroHeading = function(){
+        try{
+          const inner = document.querySelector('.hero h2 .heading-inner');
+          if(!inner) return;
+          const parent = inner.parentElement;
+          inner.style.transition = 'transform .12s ease';
+          inner.style.transformOrigin = 'left center';
+          function applyScale(){
+            inner.style.transform = '';
+            const parentW = Math.max(120, parent.getBoundingClientRect().width - 24);
+            const w = inner.getBoundingClientRect().width;
+            if(w > parentW){
+              const scale = Math.max(0.6, parentW / w);
+              inner.style.transform = 'scale(' + scale + ')';
+            } else inner.style.transform = '';
+          }
+          applyScale();
+          window.addEventListener('resize', () => { applyScale(); }, {passive:true});
+        }catch(e){ console.warn('fitHeroHeading error', e); }
+      };
+
+      // basic sticky header hint (adds .scrolled at small scroll offset)
+      window.initStickyHeader = function(){
+        try{
+          const header = document.querySelector('.site-header'); if(!header) return;
+          function handle(){ if(window.scrollY > 60) header.classList.add('scrolled'); else header.classList.remove('scrolled'); }
+          handle(); window.addEventListener('scroll', handle, {passive:true});
+        }catch(e){ console.warn('initStickyHeader error', e); }
+      };
+    })();
+  </script>
+
+
+  <script>
+    // Scroll progress indicator
+    document.addEventListener('scroll', function() {
+      if(!document.body.classList.contains('loaded')) return; // prevent updating while loader active
+      const scrollTop = window.scrollY || window.pageYOffset;
+      const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrollPercent = (scrollTop / docHeight) * 100;
+      const progress = document.getElementById('scroll-progress');
+      if(progress) progress.style.width = scrollPercent + '%';
+    });
+  </script>
+
+</body>
+</html>
+  <style>
+    /* Hide chat toggle while loader is active */
+    .loader ~ #tofl-chat {
+      display: none;
+    }
+    body.loaded ~ #tofl-chat {
+      display: flex;
+    }
+  </style>
